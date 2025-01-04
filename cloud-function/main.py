@@ -1,5 +1,6 @@
 import functions_framework
 import os
+import requests
 
 @functions_framework.http
 def handler(request):    
