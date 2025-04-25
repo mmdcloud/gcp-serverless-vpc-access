@@ -12,6 +12,18 @@ module "vpc" {
       machine_type  = "f1-micro"
     }
   ]
+  subnets = [
+    {
+      name          = "subnet"
+      region        = var.location
+      ip_cidr_range = "10.0.1.0/24"
+    }
+  ]
+}
+
+module "instance_firewalls" {
+  source = "./modules/firewall"
+  vpc_id = module.vpc.vpc_id
   firewalls = [
     {
       name               = "vpc-connector-firewall"
@@ -26,9 +38,10 @@ module "vpc" {
       ]
     },
     {
-      name          = "allow-ssh"
-      direction     = "INGRESS"
-      source_ranges = ["0.0.0.0/0"]
+      name               = "allow-ssh"
+      direction          = "INGRESS"
+      source_ranges      = ["0.0.0.0/0"]
+      destination_ranges = []
       allow_list = [
         {
           protocol = "tcp"
@@ -37,13 +50,7 @@ module "vpc" {
       ]
     }
   ]
-  subnets = [
-    {
-      name          = "subnet"
-      region        = var.location
-      ip_cidr_range = "10.0.1.0/24"
-    }
-  ]
+  depends_on = [module.vpc, module.instance]
 }
 
 # Code Storage Bucket
@@ -69,8 +76,9 @@ module "instance" {
   zone         = "us-central1-a"
   network_interfaces = [
     {
-      network    = module.vpc.vpd_id
-      subnetwork = module.vpc.subnets[0].id
+      access_configs = []
+      network        = module.vpc.vpc_id
+      subnetwork     = module.vpc.subnets[0].id
     }
   ]
   metadata = {
@@ -100,7 +108,7 @@ module "function" {
   storage_source_bucket_object   = module.gcs.objects[0].name
   max_instance_count             = 3
   min_instance_count             = 1
-  vpc_connector                  = module.vpc_connectors[0].name
+  vpc_connector                  = module.vpc.vpc_connectors[0].name
   available_memory               = "256M"
   timeout_seconds                = 60
   all_traffic_on_latest_revision = true
