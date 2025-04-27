@@ -56,13 +56,13 @@ module "instance_firewalls" {
 # Code Storage Bucket
 module "gcs" {
   source                      = "./modules/gcs"
-  bucket_name                 = "nodal-talon-code-bucket"
+  bucket_name                 = "orbital-bee-code-bucket"
   location                    = var.location
   force_destroy               = true
   uniform_bucket_level_access = true
   objects = [
     {
-      name   = "nodal-talon-code-object"
+      name   = "orbital-bee-code-object"
       source = "./files/code.zip"
     }
   ]
