@@ -1,3 +1,6 @@
+# Getting project information
+data "google_project" "project" {}
+
 # VPC Module
 module "vpc" {
   source                  = "./modules/vpc"
@@ -56,13 +59,13 @@ module "instance_firewalls" {
 # Code Storage Bucket
 module "gcs" {
   source                      = "./modules/gcs"
-  bucket_name                 = "orbital-bee-code-bucket"
+  bucket_name                 = "encoded-alpha-code-bucket"
   location                    = var.location
   force_destroy               = true
   uniform_bucket_level_access = true
   objects = [
     {
-      name   = "orbital-bee-code-object"
+      name   = "encoded-alpha-code-object"
       source = "./files/code.zip"
     }
   ]
@@ -93,6 +96,21 @@ sudo python3 -m http.server 80
   allow_stopping_for_update = true
 }
 
+# Service Account
+data "google_compute_default_service_account" "default_sa" {}
+
+resource "google_project_iam_member" "default_sa_permissions" {
+  for_each = toset([
+    "roles/logging.logWriter",
+    "roles/storage.objectViewer",
+    "roles/artifactregistry.writer"
+  ])
+  
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${data.google_compute_default_service_account.default_sa.email}"
+}
+
 # Cloud Run Function
 module "function" {
   source               = "./modules/cloud-run-function"
@@ -113,4 +131,5 @@ module "function" {
   timeout_seconds                = 60
   all_traffic_on_latest_revision = true
   ingress_settings               = "ALLOW_ALL"
+  depends_on = [ google_project_iam_member.default_sa_permissions ]
 }

@@ -36,7 +36,7 @@ resource "google_cloudfunctions2_function" "function" {
     environment_variables          = var.build_env_variables
     ingress_settings               = var.ingress_settings
     all_traffic_on_latest_revision = var.all_traffic_on_latest_revision
-    # service_account_email          = var.function_app_service_account_email
+    # service_account_email          = var.service_account_email
   }
 }
 
