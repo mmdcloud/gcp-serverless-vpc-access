@@ -4,6 +4,6 @@ variable "location" {
 }
 
 variable "project_id" {
-  type = string
+  type    = string
   default = "encoded-alpha-457108-e8"
 }

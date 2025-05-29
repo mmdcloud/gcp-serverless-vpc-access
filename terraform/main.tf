@@ -105,7 +105,7 @@ resource "google_project_iam_member" "default_sa_permissions" {
     "roles/storage.objectViewer",
     "roles/artifactregistry.writer"
   ])
-  
+
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${data.google_compute_default_service_account.default_sa.email}"
@@ -131,5 +131,5 @@ module "function" {
   timeout_seconds                = 60
   all_traffic_on_latest_revision = true
   ingress_settings               = "ALLOW_ALL"
-  depends_on = [ google_project_iam_member.default_sa_permissions ]
+  depends_on                     = [google_project_iam_member.default_sa_permissions]
 }
