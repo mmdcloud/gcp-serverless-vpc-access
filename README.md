@@ -1,99 +1,144 @@
-# GCP Private Access: Cloud Run to Private Instance
+# Secure VM Access via Serverless VPC Connector
 
-A secure deployment setup for connecting Cloud Run functions to private cloud instances via VPC Service Connector.
+This project enables secure access to a private VM instance through a Cloud Function using Google Cloud Platform's Serverless VPC Connector. It provides a secure way to expose VM-hosted content without directly exposing the VM to the internet.
 
-## Overview
+The infrastructure creates a private VM instance hosting a simple web server and a Cloud Function that acts as a secure proxy. The Cloud Function connects to the VM through a Serverless VPC Connector, allowing controlled access to the VM's content while maintaining security through network isolation. This setup is ideal for scenarios requiring secure access to private resources without direct internet exposure.
 
-This repository contains the infrastructure code to deploy:
-- A serverless Cloud Run function
-- A private cloud instance (Compute Engine VM)
-- Secure connectivity between them using VPC Service Connector
-
-## Features
-
-- Serverless function execution with secure private network access
-- No public IP exposure for the private instance
-- Infrastructure as Code using Terraform
-- Automated CI/CD pipeline for deployment
-
-## Architecture
-
+## Repository Structure
 ```
-┌─────────────┐      ┌─────────────────┐      ┌──────────────────┐
-│  Cloud Run  │──────▶ VPC Connector   │──────▶  Private Cloud   │
-│  Function   │      │ Service         │      │  Instance        │
-└─────────────┘      └─────────────────┘      └──────────────────┘
+.
+├── cloud-function/               # Cloud Function source code
+│   ├── main.py                  # HTTP endpoint handler for VM access
+│   └── requirements.txt         # Python dependencies
+└── terraform/                   # Infrastructure as Code
+    ├── main.tf                  # Main infrastructure configuration
+    ├── modules/                 # Modular infrastructure components
+    │   ├── cloud-run-function/  # Cloud Function deployment configuration
+    │   ├── compute/            # VM instance configuration
+    │   ├── firewall/          # Network security rules
+    │   ├── gcs/               # Cloud Storage configuration
+    │   ├── network/           # VPC and networking components
+    │   ├── service-account/   # IAM and permissions
+    │   └── vpc/              # VPC configuration
+    ├── outputs.tf             # Infrastructure outputs
+    ├── provider.tf           # GCP provider configuration
+    └── variables.tf         # Infrastructure variables
 ```
 
-## Getting Started
-
+## Usage Instructions
 ### Prerequisites
-
-- Google Cloud Platform account
-- `gcloud` CLI installed
-- GitHub account for CI/CD integration
+- Google Cloud Platform account with billing enabled
+- Google Cloud SDK installed and configured
+- Terraform v1.0.0 or later
+- Python 3.12 or later
+- Access to create GCP resources:
+  - Cloud Functions
+  - Compute Engine
+  - VPC Networks
+  - Cloud Storage
+  - IAM permissions
 
 ### Installation
 
-1. Clone this repository:
-   ```
-   git clone https://github.com/yourusername/gcp-private-access.git
-   cd gcp-private-access
-   ```
-
-2. Set up your GCP credentials:
-   ```
-   gcloud auth login
-   gcloud config set project YOUR_PROJECT_ID
-   ```
-
-3. Run the deployment script:
-   ```
-   ./deploy.sh
-   ```
-
-## Usage
-
-Once deployed, your Cloud Run function can access the private instance via its internal IP address. The function code includes examples of how to make these connections.
-
-Example of accessing your private instance from Cloud Run:
-
-```python
-import requests
-
-def access_private_instance(request):
-    # The private instance is accessible via its internal IP
-    response = requests.get('http://10.0.0.2:8080/api/data')
-    return response.text
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd <repository-name>
 ```
 
-## Configuration
-
-Edit `config.yaml` to customize your deployment:
-
-```yaml
-project_id: your-gcp-project
-region: us-central1
-vpc_connector_name: run-connector
-instance_machine_type: e2-micro
+2. Initialize Terraform:
+```bash
+cd terraform
+terraform init
 ```
 
-## Contributing
+3. Configure the project:
+```bash
+# Update provider.tf with your project ID
+# Update variables.tf with desired configuration
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+4. Deploy the infrastructure:
+```bash
+terraform plan
+terraform apply
+```
 
-## License
+### Quick Start
+1. After deployment, get the Cloud Function URL:
+```bash
+terraform output service_uri
+```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+2. Access the VM's content through the Cloud Function:
+```bash
+curl $(terraform output -raw service_uri)
+```
 
-## Support
+### More Detailed Examples
+1. Customizing the VM content:
+```bash
+# SSH into the VM and modify index.html
+gcloud compute ssh vm-instance --zone=us-central1-a
+echo "Custom content" > index.html
+```
 
-For questions or issues, please open an issue on this repository or contact the maintainers.
+2. Monitoring the Cloud Function:
+```bash
+# View Cloud Function logs
+gcloud functions logs read serverless-vpc-handler
+```
 
----
+### Troubleshooting
+1. Cloud Function Connection Issues
+   - Error: "Could not connect to VM"
+   - Solution: 
+     ```bash
+     # Verify VPC connector status
+     gcloud compute networks vpc-access connectors describe serverless-vpc-connector --region=us-central1
+     ```
 
-Made with ❤️ by Your Team
+2. VM Access Issues
+   - Error: "HTTP 503"
+   - Solution:
+     ```bash
+     # Check VM status and web server
+     gcloud compute instances describe vm-instance --zone=us-central1-a
+     ```
+
+## Data Flow
+The system processes requests through a secure network path from public internet to private VM.
+
+```ascii
+[Public Internet] -> [Cloud Function] -> [VPC Connector] -> [Private VM]
+                     (Proxy Layer)      (Secure Channel)    (Web Server)
+```
+
+Component interactions:
+1. Client sends HTTP request to Cloud Function endpoint
+2. Cloud Function authenticates and validates request
+3. VPC Connector provides secure network path to VM
+4. VM serves content through private network
+5. Response returns through same secure path
+
+## Infrastructure
+
+![Infrastructure diagram](./docs/infra.svg)
+- **VPC Network**
+  - Custom VPC with private subnet (10.0.1.0/24)
+  - Serverless VPC connector (10.8.0.0/28)
+
+- **Compute**
+  - VM Instance: e2-micro running Ubuntu 20.04
+  - Python HTTP server on port 80
+
+- **Security**
+  - Firewall rules:
+    - Allow VPC connector to VM (port 80)
+    - Allow SSH access (port 22)
+  - Private VM without public IP
+
+- **Serverless**
+  - Cloud Function with Python 3.12 runtime
+  - 256MB memory allocation
+  - Auto-scaling (1-3 instances)

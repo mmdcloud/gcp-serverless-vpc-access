@@ -1,0 +1,41 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "vpc" [ label = "vpc
+(google_compute_network)" ];
+  "subnet" [ label = "subnet
+(google_compute_subnetwork)" ];
+  "serverless-vpc-connector" [ label = "serverless-vpc-connector
+(google_vpc_access_connector)" ];
+  "vpc-connector-firewall" [ label = "vpc-connector-firewall
+(google_compute_firewall)" ];
+  "allow-ssh" [ label = "allow-ssh
+(google_compute_firewall)" ];
+  "encoded-alpha-code-bucket" [ label = "encoded-alpha-code-bucket
+(google_storage_bucket)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "encoded-alpha-code-object" [ label = "encoded-alpha-code-object
+(google_storage_bucket_object)", shape =cylinder, fillcolor = "#FFF5CD" ];
+  "vm-instance" [ label = "vm-instance
+(google_compute_instance)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "default_sa_permissions" [ label = "default_sa_permissions
+(google_project_iam_member)" ];
+  "serverless-vpc-handler" [ label = "serverless-vpc-handler
+(google_cloudfunctions2_function)", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "serverless-vpc-handler-invoker" [ label = "serverless-vpc-handler-invoker
+(google_cloudfunctions2_function_iam_member)" ];
+  "serverless-vpc-handler-run-invoker" [ label = "serverless-vpc-handler-run-invoker
+(google_cloud_run_service_iam_member)" ];
+  "subnet" -> "vpc";
+  "serverless-vpc-connector" -> "vpc";
+  "vpc-connector-firewall" -> "vpc";
+  "vpc-connector-firewall" -> "vm-instance";
+  "allow-ssh" -> "vpc";
+  "encoded-alpha-code-object" -> "encoded-alpha-code-bucket";
+  "vm-instance" -> "vpc";
+  "vm-instance" -> "subnet";
+  "serverless-vpc-handler" -> "encoded-alpha-code-bucket";
+  "serverless-vpc-handler" -> "serverless-vpc-connector";
+  "serverless-vpc-handler" -> "vm-instance";
+  "serverless-vpc-handler" -> "default_sa_permissions";
+  "serverless-vpc-handler-invoker" -> "serverless-vpc-handler";
+  "serverless-vpc-handler-run-invoker" -> "serverless-vpc-handler";
+}
